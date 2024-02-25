@@ -342,3 +342,4 @@ License: See license.txt *}
 {/if}
 {$forms.reportViewForm.close}
 <div class="button-set"><input type="button" onclick="chLocation('report_send.php');" value="{$i18n.button.send_by_email}"></div>
+<div class="button-set"><input type="button" onclick="chLocation('google_sheets_send.php');" value="Send to Google Sheets"></div>
