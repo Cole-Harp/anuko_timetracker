@@ -623,4 +623,11 @@ CREATE TABLE `tt_site_config` (
   PRIMARY KEY  (`param_name`)
 );
 
+CREATE TABLE `tt_google_sheets` (
+  `id` int(10) unsigned NOT NULL auto_increment,   # row id
+  `user_id` int(11) NOT NULL,                      # user id who this belongs to
+  `spreadsheet_id` varchar(255) NOT NULL,          # google spreadsheet id
+  PRIMARY KEY (`id`)
+);
+
 INSERT INTO `tt_site_config` (`param_name`, `param_value`, `created`) VALUES ('version_db', '1.22.3', now()); # TODO: change when structure changes.
