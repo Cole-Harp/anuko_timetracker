@@ -1,6 +1,7 @@
 <?php
 
 require_once('initialize.php');
+require('/var/www/html/vendor/autoload.php');
 import('form.Form');
 import('form.ActionForm');
 import('ttReportHelper');
@@ -194,34 +195,53 @@ if ($totals_only) {
 }
 
 try {
-  $lines = explode("\n", $csv_to_export); // Split the string into lines
+  $destination = new ActionForm('sheetsBean', new Form('tabsForm'), $request);
+  $destination->loadBean();
 
+  $spreadsheet_id = $destination->getAttribute('sheetId');
+  $newSheetName = $destination->getAttribute('newSheetName');
+
+  // Proceed with existing tab or newTab logic
+  $existingTab = $destination->getAttribute('tabId');
+  $newTab = $destination->getAttribute('newTab');
+  $selectedTab = !empty($newTab) ? $newTab : $existingTab;
+
+  // Prepare the data to update
+  $lines = explode("\n", $csv_to_export);
   $values = array_map(function($v) {
-      return str_getcsv($v, ","); // Assuming your CSV string is tab-delimited
+      return str_getcsv($v, ",");
   }, $lines);
 
-  require '/var/www/html/vendor/autoload.php';
-
+  // Google Client setup
   $service_account_file = '/var/www/html/credentials.json';
-
-  $spreadsheet_id = '';
-
-  $spreadsheet_range = '';
-
   putenv('GOOGLE_APPLICATION_CREDENTIALS=' . $service_account_file);
   $client = new Google_Client();
   $client->useApplicationDefaultCredentials();
   $client->addScope(Google_Service_Sheets::SPREADSHEETS);
   $service = new Google_Service_Sheets($client);
 
-  $valueRange = new Google_Service_Sheets_ValueRange(array( 
-      'values' => $values 
-  )); 
-  $conf = ["valueInputOption" => "RAW"]; 
+  // If newTab is specified, add the new tab
+  if (!empty($newTab)) {
+      $batchUpdateRequest = new Google_Service_Sheets_BatchUpdateSpreadsheetRequest([
+          'requests' => [
+              'addSheet' => [
+                  'properties' => ['title' => $selectedTab]
+              ]
+          ]
+      ]);
+      $service->spreadsheets->batchUpdate($spreadsheet_id, $batchUpdateRequest);
+  }
+
+  // Define the full range including the tab name
+  $spreadsheet_range = $selectedTab;
+  $valueRange = new Google_Service_Sheets_ValueRange(['values' => $values]);
+  $conf = ["valueInputOption" => "RAW"];
+  
+  // Update the spreadsheet/tab with the data
   $result = $service->spreadsheets_values->update($spreadsheet_id, $spreadsheet_range, $valueRange, $conf);
 
   // Redirect back to the report page.
   header('Location: report.php');
 } catch (Exception $e) {
-  echo 'Caught exception: ' .  $e->getMessage() . PHP_EOL;
+  echo 'Caught exception: ' . $e->getMessage() . PHP_EOL;
 }
