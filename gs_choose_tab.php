@@ -12,11 +12,12 @@ if ($request->isPost()) {
     $bean->loadBean();
 }
 
-$folderId = $bean->getAttribute("folderId");
-
+$folderId = $bean->getAttribute('folderId');
 $selectedSheetId = $bean->getAttribute('sheetId');
 $selectedSheetName = $bean->getDetachedAttribute('sheetName');
 $newSheetName = $bean->getAttribute('newSheet');
+
+$bean->destroyBean();
 
 $form = new Form('tabsForm');
 
@@ -39,7 +40,7 @@ $form->addInput(['type' => 'hidden', 'name' => 'newSheetName', 'value' => $newSh
 $bean = new ActionForm('sheetsBean', $form, $request);
 
 
-if ($request->isPost() && (isset($_POST['tabId']) || !empty($newSheetName))) {
+if ($request->isPost() && (!empty($bean->getAttribute('tabId')) || !empty($newSheetName))) {
     // Create new sheet and add it to local db before passing it to the update script
     if (!empty($newSheetName)){
         $addSheetId = ttGoogleSheets::createSheet($newSheetName, $bean->getAttribute('folderId'));

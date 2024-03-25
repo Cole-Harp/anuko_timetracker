@@ -204,6 +204,9 @@ try {
   // Proceed with existing tab or newTab logic
   $existingTab = $destination->getAttribute('tabId');
   $newTab = $destination->getAttribute('newTab');
+
+  $destination->destroyBean();
+
   $selectedTab = !empty($newTab) ? $newTab : $existingTab;
 
   // Prepare the data to update
