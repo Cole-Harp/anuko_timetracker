@@ -35,6 +35,9 @@ class ttGoogleSheets {
                 $result[] = $val;
             }
         }
+        else {
+            error_log('error in get all fetch at ttgooglesheet');
+        }
         return $result;
     }
 
@@ -49,7 +52,10 @@ class ttGoogleSheets {
         if (!is_a($res, 'PEAR_Error')) {
             return true; // Successfully added.
         }
-        return false; // Failed to add.
+        else {
+            error_log('error in get all fetch at ttgooglesheet');
+            return false; // Failed to add.
+        }
     }
 
 
@@ -65,7 +71,12 @@ class ttGoogleSheets {
         if (!is_a($res, 'PEAR_Error')) {
             return true;
         }
-        return false;
+        
+        else {
+            error_log('error in get all fetch at ttgooglesheet');
+            return false;
+        }
+
     }
 
     // retrieves all tabs from a Google Sheet by spreadsheet_id.

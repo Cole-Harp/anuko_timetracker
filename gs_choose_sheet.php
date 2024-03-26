@@ -37,16 +37,24 @@ if ($request->isPost()) {
   }
 
   $selectedSheetId = $bean->getAttribute('sheetId');
+  $selectedFolderId = $bean->getAttribute('folderId');
+  $newSheet = $bean->getAttribute('newSheet');
 
-  // $listOfSpreadsheets maps IDs to names.
-  $selectedSheetName = isset($listOfSpreadsheets[$selectedSheetId]) ? $listOfSpreadsheets[$selectedSheetId] : null;
+  // Check if either sheetId is selected and not folderId and newSheet, or folderId and newSheet are populated and not sheetId.
+  if (($selectedSheetId && !$selectedFolderId && !$newSheet) || ($selectedFolderId && $newSheet && !$selectedSheetId)) {
+    // $listOfSpreadsheets maps IDs to names.
+    $selectedSheetName = isset($listOfSpreadsheets[$selectedSheetId]) ? $listOfSpreadsheets[$selectedSheetId] : null;
 
-  $bean->saveDetachedAttribute('sheetName', $selectedSheetName);
+    $bean->saveDetachedAttribute('sheetName', $selectedSheetName);
 
-  $bean->saveBean(); // Persists the changes.
-  header('Location: gs_choose_tab.php');
-  exit();
+    $bean->saveBean(); // Persists the changes.
+    header('Location: gs_choose_tab.php');
+    exit();
+  }
 }
+
+
+
 
 $smarty->assign(['title' => 'Time Tracker - Choose Spreadsheet', 'forms' => [$form->getName() => $form->toArray()], 'content_page_name' => 'gs_choose_sheet.tpl']);
 $smarty->display('index.tpl');
