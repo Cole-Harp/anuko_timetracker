@@ -6,22 +6,26 @@ import('form.ActionForm');
 import('ttReportHelper');
 import('ttGoogleSheets');
 
+// Access checks.
+if (!(ttAccessAllowed('view_own_reports') || ttAccessAllowed('view_reports') || ttAccessAllowed('view_all_reports') || ttAccessAllowed('view_client_reports'))) {
+    header('Location: access_denied.php');
+    exit();
+}
+
 $bean = new ActionForm('sheetsBean', new Form('googleSheetsForm'), $request);
 
 if ($request->isPost()) {
     $bean->loadBean();
 }
 
-# For existing sheet update
+$folderId = $bean->getAttribute('folderId');
 $selectedSheetId = $bean->getAttribute('sheetId');
 $selectedSheetName = $bean->getDetachedAttribute('sheetName');
-# For new sheet creation
-$folderId = $bean->getAttribute('folderId');
 $newSheetName = $bean->getAttribute('newSheet');
 
 $bean->destroyBean();
 
-
+$form = new Form('tabsForm');
 
 // If there is a selected sheet, fetch its tabs.
 if (!empty($selectedSheetId)) {
@@ -30,8 +34,6 @@ if (!empty($selectedSheetId)) {
 } else {
     $tabOptions = [];
 }
-
-$form = new Form('tabsForm');
 
 $form->addInput(['type' => 'combobox','name' => 'tabId','data' => $tabOptions,'empty' => ['' => 'Select a Tab or Enter New Tab Name Below']]);
 $form->addInput(['type' => 'text', 'name' => 'newTab', 'attributes' => ['placeholder' => 'New Tab Name']]);
@@ -44,14 +46,18 @@ $form->addInput(['type' => 'hidden', 'name' => 'newSheetName', 'value' => $newSh
 $bean = new ActionForm('sheetsBean', $form, $request);
 
 
-if ($request->isPost()) {
+if ($request->isPost()) { 
+    
+    $selectedTabId = $bean->getAttribute('tabId');
+    $newTab = $bean->getAttribute('newTab');
+
     if (($selectedTabId && !$newTab) || ($newTab && !$selectedTabId)) { 
-    // Create new sheet and add it to local db before passing it to the update script
+        // Create new sheet and add it to local db before passing it to the update script
         if (!empty($newSheetName)){
             $addSheetId = ttGoogleSheets::createSheet($newSheetName, $bean->getAttribute('folderId'));
             ttGoogleSheets::add($user->id, $addSheetId);
             $bean->setAttribute('sheetId', $addSheetId);
-            }
+        }
 
         $bean->saveBean();
         header('Location: gs_send.php');
