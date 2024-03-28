@@ -22,38 +22,16 @@ class ttGoogleSheets {
         }
     }
 
-    // retrieves all Google Sheets records.
-    static function getAll() {
-        $mdb2 = getConnection();
-
-        $sql = "SELECT id, user_id, spreadsheet_id FROM tt_google_sheets";
-        $res = $mdb2->query($sql);
-
-        $result = array();
-        if (!is_a($res, 'PEAR_Error')) {
-            while ($val = $res->fetchRow(MDB2_FETCHMODE_ASSOC)) {
-                $result[] = $val;
-            }
-        }
-        else {
-            error_log('error in get all fetch at ttgooglesheet');
-        }
-        return $result;
-    }
-
     // adds a new Google Sheet record.
     static function add($user_id, $spreadsheet_id) {
         $mdb2 = getConnection();
+        $sql = "insert into tt_google_sheets (user_id, spreadsheet_id) values ($user_id, " . $mdb2->quote($spreadsheet_id) . ")";
+        $affectedRows = $mdb2->exec($sql);
 
-        $sql = "INSERT INTO tt_google_sheets (user_id, spreadsheet_id) VALUES (?, ?)";
-        $sth = $mdb2->prepare($sql);
-        $res = $sth->execute(array($user_id, $spreadsheet_id));
-
-        if (!is_a($res, 'PEAR_Error')) {
+        if (!is_a($affectedRows, 'PEAR_Error')) {
             return true; // Successfully added.
-        }
-        else {
-            error_log('error in get all fetch at ttgooglesheet');
+        } else {
+            error_log('Error in add operation at ttGoogleSheet');
             return false; // Failed to add.
         }
     }
@@ -62,21 +40,34 @@ class ttGoogleSheets {
     // deletes a Google Sheet record by spreadsheet_id.
     static function delete($spreadsheetId) {
         $mdb2 = getConnection();
+        $sql = "delete from tt_google_sheets where spreadsheet_id = " . $mdb2->quote($spreadsheetId, 'text');
+        $affectedRows = $mdb2->exec($sql);
+    }
 
-        // Adjust the SQL to target spreadsheet_id instead of id
-        $sql = "DELETE FROM tt_google_sheets WHERE spreadsheet_id = ?";
-        $sth = $mdb2->prepare($sql);
-        $res = $sth->execute(array($spreadsheetId));
+    // retrieves all Google Sheets shared to serbice bot.
+    public static function fetchSpreadsheetDetails() {
 
-        if (!is_a($res, 'PEAR_Error')) {
-            return true;
+        $mdb2 = getConnection();
+        $sql = "SELECT spreadsheet_id FROM tt_google_sheets";
+        $res = $mdb2->query($sql);
+        $dataArray = $res->fetchAll(MDB2_FETCHMODE_ASSOC);
+        try {
+            self::initializeGoogleServices(); 
+            $listOfSpreadsheets = [];
+
+            foreach ($dataArray as $row) {
+                // Get the spreadsheet
+                $spreadsheet = self::$sheetsService->spreadsheets->get($row['spreadsheet_id']);
+                // Get the title of the spreadsheet
+                $spreadsheetName = $spreadsheet->getProperties()->getTitle();
+                // Name of spreadsheet
+                $listOfSpreadsheets[$row['spreadsheet_id']] = $spreadsheetName;
+            }
+        } catch (Exception $e) {
+            echo 'Caught exception: ', $e->getMessage(), "\n";
         }
-        
-        else {
-            error_log('error in get all fetch at ttgooglesheet');
-            return false;
-        }
 
+        return $listOfSpreadsheets;
     }
 
     // retrieves all tabs from a Google Sheet by spreadsheet_id.
@@ -124,26 +115,7 @@ class ttGoogleSheets {
             return null; // Or handle the error as appropriate
         }
     }
-    // retrieves all Google Sheets shared to serbice bot.
-    public static function fetchSpreadsheetDetails() {
-        self::initializeGoogleServices(); 
-
-        $listOfSpreadsheets = [];
-        try {
-            $dataArray = self::getAll();
-
-            foreach ($dataArray as $row) {
-                $spreadsheetId = $row['spreadsheet_id'];
-                $spreadsheetDetails = self::$sheetsService->spreadsheets->get($spreadsheetId);
-                $title = $spreadsheetDetails->getProperties()->getTitle();
-                $listOfSpreadsheets[$spreadsheetId] = $title;
-            }
-        } catch (Exception $e) {
-            echo 'Caught exception: ', $e->getMessage(), "\n";
-        }
-
-        return $listOfSpreadsheets;
-    }
+    
     // retrieves all Google Drive folders shared to service bot.
     public static function fetchFolders() {
         self::initializeGoogleServices();
@@ -156,7 +128,6 @@ class ttGoogleSheets {
                 'q' => "mimeType='application/vnd.google-apps.folder'"
             ];
             $results = self::$driveService->files->listFiles($optParams);
-
             foreach ($results->getFiles() as $file) {
                 $folders[$file->getId()] = $file->getName();
             }
@@ -167,5 +138,13 @@ class ttGoogleSheets {
         return $folders;
     }
 
-
+    public static function validateSheet($spreadsheet_id) {
+        self::initializeGoogleServices();
+        try {
+            $spreadsheet = self::$sheetsService->spreadsheets->get($spreadsheet_id);
+            return true;
+        } catch (Exception $e) {
+            return false;
+        }
+    }
 }
