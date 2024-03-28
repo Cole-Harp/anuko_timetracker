@@ -45,7 +45,6 @@ $form->addInput(['type' => 'hidden', 'name' => 'newSheetName', 'value' => $newSh
 
 $bean = new ActionForm('sheetsBean', $form, $request);
 
-
 if ($request->isPost()) { 
     
     $selectedTabId = $bean->getAttribute('tabId');

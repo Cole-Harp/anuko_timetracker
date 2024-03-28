@@ -5,6 +5,7 @@ require('/var/www/html/vendor/autoload.php');
 import('form.Form');
 import('form.ActionForm');
 import('ttReportHelper');
+import('ttGoogleSheets');
 
 // Access checks.
 if (!(ttAccessAllowed('view_own_reports') || ttAccessAllowed('view_reports') || ttAccessAllowed('view_all_reports')  || ttAccessAllowed('view_client_reports'))) {
@@ -195,17 +196,15 @@ if ($totals_only) {
 }
 
 try {
-  $destination = new ActionForm('sheetsBean', new Form('tabsForm'), $request);
-  $destination->loadBean();
+  $bean = new ActionForm('sheetsBean', new Form('tabsForm'), $request);
+  $bean->loadBean();
 
-  $spreadsheet_id = $destination->getAttribute('sheetId');
-  $newSheetName = $destination->getAttribute('newSheetName');
-
+  $spreadsheet_id = $bean->getAttribute('sheetId');
   // Proceed with existing tab or newTab logic
-  $existingTab = $destination->getAttribute('tabId');
-  $newTab = $destination->getAttribute('newTab');
+  $existingTab = $bean->getAttribute('tabId');
+  $newTab = $bean->getAttribute('newTab');
 
-  $destination->destroyBean();
+  $bean->destroyBean();
 
   $selectedTab = !empty($newTab) ? $newTab : $existingTab;
 
@@ -215,13 +214,7 @@ try {
       return str_getcsv($v, ",");
   }, $lines);
 
-  // Google Client setup
-  $service_account_file = '/var/www/html/credentials.json';
-  putenv('GOOGLE_APPLICATION_CREDENTIALS=' . $service_account_file);
-  $client = new Google_Client();
-  $client->useApplicationDefaultCredentials();
-  $client->addScope(Google_Service_Sheets::SPREADSHEETS);
-  $service = new Google_Service_Sheets($client);
+  $service = ttGoogleSheets::getSheetsService();
 
   // If newTab is specified, add the new tab
   if (!empty($newTab)) {

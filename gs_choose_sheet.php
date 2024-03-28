@@ -12,6 +12,7 @@ if (!(ttAccessAllowed('view_own_reports') || ttAccessAllowed('view_reports') || 
     header('Location: access_denied.php');
     exit();
 }
+
 $listOfSpreadsheets = ttGoogleSheets::fetchSpreadsheetDetails();
 $folders = ttGoogleSheets::fetchFolders();
 

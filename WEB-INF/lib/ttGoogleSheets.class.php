@@ -22,6 +22,11 @@ class ttGoogleSheets {
         }
     }
 
+    static function getSheetsService() {
+        self::initializeGoogleServices();
+        return self::$sheetsService;
+    }
+
     // adds a new Google Sheet record.
     static function add($user_id, $spreadsheet_id) {
         $mdb2 = getConnection();
