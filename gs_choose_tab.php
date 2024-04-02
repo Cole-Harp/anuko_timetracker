@@ -8,19 +8,21 @@ import('ttGoogleSheets');
 
 // Access checks.
 if (!(ttAccessAllowed('view_own_reports') || ttAccessAllowed('view_reports') || ttAccessAllowed('view_all_reports') || ttAccessAllowed('view_client_reports'))) {
-    header('Location: access_denied.php');
-    exit();
+  header('Location: access_denied.php');
+  exit();
 }
 
 $bean = new ActionForm('sheetsBean', new Form('googleSheetsForm'), $request);
 
 if ($request->isPost()) {
-    $bean->loadBean();
+  $bean->loadBean();
 }
 
-$folderId = $bean->getAttribute('folderId');
 $selectedSheetId = $bean->getAttribute('sheetId');
+$truncatedSheetId = substr($selectedSheetId, 0, 10) . '...';
 $selectedSheetName = $bean->getDetachedAttribute('sheetName');
+
+$folderId = $bean->getAttribute('folderId');
 $newSheetName = $bean->getAttribute('newSheet');
 
 $bean->destroyBean();
@@ -29,10 +31,10 @@ $form = new Form('tabsForm');
 
 // If there is a selected sheet, fetch its tabs.
 if (!empty($selectedSheetId)) {
-    $tabs = ttGoogleSheets::getTabs($selectedSheetId);
-    $tabOptions = array_combine($tabs, $tabs);
+  $tabs = ttGoogleSheets::getTabs($selectedSheetId);
+  $tabOptions = array_combine($tabs, $tabs);
 } else {
-    $tabOptions = [];
+  $tabOptions = [];
 }
 
 $form->addInput(['type' => 'combobox','name' => 'tabId','data' => $tabOptions,'empty' => ['' => 'Select a Tab or Enter New Tab Name Below']]);
@@ -45,29 +47,41 @@ $form->addInput(['type' => 'hidden', 'name' => 'newSheetName', 'value' => $newSh
 
 $bean = new ActionForm('sheetsBean', $form, $request);
 
-if ($request->isPost()) { 
+if ($request->isPost()) {
     
-    $selectedTabId = $bean->getAttribute('tabId');
-    $newTab = $bean->getAttribute('newTab');
+  $selectedTabId = $bean->getAttribute('tabId');
+  $newTab = $bean->getAttribute('newTab');
+  $newSheetName = $bean->getAttribute('newSheetName');
 
     if (($selectedTabId && !$newTab) || ($newTab && !$selectedTabId)) { 
-        // Create new sheet and add it to local db before passing it to the update script
-        if (!empty($newSheetName)){
-            $addSheetId = ttGoogleSheets::createSheet($newSheetName, $bean->getAttribute('folderId'));
-            ttGoogleSheets::add($user->id, $addSheetId);
-            $bean->setAttribute('sheetId', $addSheetId);
-        }
-
-        $bean->saveBean();
-        header('Location: gs_send.php');
-        exit();
+      // Create new sheet, add it to local db, and validate it before passing it to the upload script
+      if (!empty($newSheetName)){
+        $addSheetId = ttGoogleSheets::createSheet($newSheetName, $bean->getAttribute('folderId'));
+        ttGoogleSheets::add($user->id, $addSheetId);
+        $bean->setAttribute('sheetId', $addSheetId);
+      }
+      $bean->saveBean();
+      header('Location: gs_send.php');
+      exit();
+    }
+    else {
+      // Store error message in a session variable
+      $_SESSION['error_message'] = 'Incorrect parameter selection: Choose a Tab OR a New Tab Name.';
+      header('Location: gs_choose_sheet.php');
+      exit();
     }
 }
+if (isset($_SESSION['error_message'])) {
+    $errorMessage = $_SESSION['error_message'];
+    unset($_SESSION['error_message']);
+  } else {
+    $errorMessage = null;
+  }
 
-
+$smarty->assign('error_message', $errorMessage);
 $smarty->assign([
     'title' => 'Time Tracker - Select or Create Tab',
-    'selectedSheetId' => $selectedSheetId,
+    'selectedSheetId' => $truncatedSheetId,
     'selectedSheetName' => $selectedSheetName,
     'forms' => [$form->getName() => $form->toArray()],
     'content_page_name' => 'gs_choose_tab.tpl'
