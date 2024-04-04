@@ -21,4 +21,5 @@
 </table>
 <div class="button-set">{$forms.googleSheetsForm.btn_add.control}</div>
 <div class="button-set">{$forms.googleSheetsForm.btn_delete.control}</div>
+<div class="button-set">{$forms.googleSheetsForm.btn_back.control}</div>
 {$forms.googleSheetsForm.close}

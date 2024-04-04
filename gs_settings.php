@@ -20,6 +20,7 @@ $form->addInput(array('type'=>'combobox', 'name'=>'sheetId', 'data'=>$listOfSpre
 $form->addInput(['type' => 'text', 'name' => 'newSheet', 'attributes' => ['placeholder' => 'New Spreadsheet']]);
 $form->addInput(['type' => 'submit', 'name' => 'btn_add', 'value' => 'Add']);
 $form->addInput(['type' => 'submit', 'name' => 'btn_delete', 'value' => 'Delete']);
+$form->addInput(['type' => 'submit', 'name' => 'btn_back', 'value' => 'Back']);
 
 
 $bean = new ActionForm('sheetsBean', $form, $request);
@@ -37,7 +38,9 @@ if ($request->isPost()) {
     ttGoogleSheets::delete($selectedSheetId);
   }
   elseif ($request->getParameter('btn_back')) {
-    // Redirect to gs_choose_sheet
+    // Redirect to gs_settings.php
+    header('Location: gs_choose_sheet.php');
+    exit();
   }
 }
 

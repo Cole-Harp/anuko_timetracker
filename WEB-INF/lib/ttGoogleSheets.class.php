@@ -29,15 +29,24 @@ class ttGoogleSheets {
 
     // adds a new Google Sheet record.
     static function add($user_id, $spreadsheet_id) {
+        #self validate fuction right here, only trigger the add if it is validated.
+        #check if the spreadsheet id is already in the database
         $mdb2 = getConnection();
-        $sql = "insert into tt_google_sheets (user_id, spreadsheet_id) values ($user_id, " . $mdb2->quote($spreadsheet_id) . ")";
-        $affectedRows = $mdb2->exec($sql);
+        $sql = "select count(*) from tt_google_sheets where spreadsheet_id = " . $mdb2->quote($spreadsheetId, 'text');
+        $result = $mdb2->query($sql);
+        $count = $result->fetchRow();
 
-        if (!is_a($affectedRows, 'PEAR_Error')) {
-            return true; // Successfully added.
-        } else {
-            error_log('Error in add operation at ttGoogleSheet');
-            return false; // Failed to add.
+        if (self::validateSheet($spreadsheet_id) && ($count < 1)) {
+            $sql = "insert into tt_google_sheets (user_id, spreadsheet_id) values ($user_id, " . $mdb2->quote($spreadsheet_id) . ")";
+            $affectedRows = $mdb2->exec($sql);
+    
+
+            if (!is_a($affectedRows, 'PEAR_Error')) {
+                return true; // Successfully added.
+            } else {
+                error_log('Error in add operation at ttGoogleSheet');
+                return false; // Failed to add.
+            }
         }
     }
 
@@ -152,4 +161,5 @@ class ttGoogleSheets {
             return false;
         }
     }
+      
 }
