@@ -13,20 +13,24 @@ if (!(ttAccessAllowed('view_own_reports') || ttAccessAllowed('view_reports') || 
   exit();
 }
 
+// Initialize Google Client and Services (Sheets and Drive)
 $listOfSpreadsheets = ttGoogleSheets::fetchSpreadsheetDetails();
 $folders = ttGoogleSheets::fetchFolders();
 
+// Create a form
 $form = new Form('googleSheetsForm');
 
+// Add controls to the form
 $form->addInput(array('type'=>'combobox', 'name'=>'folderId', 'data'=>$folders, 'empty'=>array(''=>$i18n->get('dropdown.selectFolder'))));
 $form->addInput(array('type'=>'combobox', 'name'=>'sheetId', 'data'=>$listOfSpreadsheets, 'empty'=>array(''=>$i18n->get('dropdown.select'))));
 $form->addInput(['type' => 'text', 'name' => 'newSheet', 'attributes' => ['placeholder' => 'New Spreadsheet']]);
 $form->addInput(['type' => 'submit', 'name' => 'btn_send', 'value' => 'Next']);
 $form->addInput(['type' => 'submit', 'name' => 'btn_settings', 'value' => 'Settings']);
 
-
+// Create a bean
 $bean = new ActionForm('sheetsBean', $form, $request);
 
+// Process the form
 if ($request->isPost()) {
 
   if ($request->getParameter('btn_settings')) {
@@ -35,6 +39,7 @@ if ($request->isPost()) {
     exit();
   }
 
+  // Validation parameters
   $selectedSheetId = $bean->getAttribute('sheetId');
   $selectedFolderId = $bean->getAttribute('folderId');
   $newSheet = $bean->getAttribute('newSheet');

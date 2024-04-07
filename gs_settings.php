@@ -12,6 +12,7 @@ if (!(ttAccessAllowed('view_own_reports') || ttAccessAllowed('view_reports') || 
     header('Location: access_denied.php');
     exit();
 }
+
 $listOfSpreadsheets = ttGoogleSheets::fetchSpreadsheetDetails();
 
 $form = new Form('googleSheetsForm');
@@ -28,17 +29,14 @@ $bean = new ActionForm('sheetsBean', $form, $request);
 if ($request->isPost()) {
 
   if ($request->getParameter('btn_add')) {
-    // Redirect to gs_settings.php
     $newSheetId = $bean->getAttribute('newSheet');
     ttGoogleSheets::add($user->id, $newSheetId);
   }
   elseif ($request->getParameter('btn_delete')) {
-    // Redirect to gs_settings.php
     $selectedSheetId = $bean->getAttribute('sheetId');
     ttGoogleSheets::delete($selectedSheetId);
   }
   elseif ($request->getParameter('btn_back')) {
-    // Redirect to gs_settings.php
     header('Location: gs_choose_sheet.php');
     exit();
   }

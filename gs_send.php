@@ -197,15 +197,11 @@ if ($totals_only) {
 
 try {
   $bean = new ActionForm('sheetsBean', new Form('tabsForm'), $request);
-  $bean->loadBean();
 
   $spreadsheet_id = $bean->getAttribute('sheetId');
   // Proceed with existing tab or newTab logic
   $existingTab = $bean->getAttribute('tabId');
   $newTab = $bean->getAttribute('newTab');
-
-  $bean->destroyBean();
-
   $selectedTab = !empty($newTab) ? $newTab : $existingTab;
 
   // Prepare the data to update

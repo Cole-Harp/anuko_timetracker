@@ -22,7 +22,7 @@ class ttGoogleSheets {
         }
     }
 
-    static function getSheetsService() {
+    static public function getSheetsService() {
         self::initializeGoogleServices();
         return self::$sheetsService;
     }
@@ -31,41 +31,52 @@ class ttGoogleSheets {
     static function add($user_id, $spreadsheet_id) {
         #self validate fuction right here, only trigger the add if it is validated.
         #check if the spreadsheet id is already in the database
-        $mdb2 = getConnection();
-        $sql = "select count(*) from tt_google_sheets where spreadsheet_id = " . $mdb2->quote($spreadsheetId, 'text');
-        $result = $mdb2->query($sql);
-        $count = $result->fetchRow();
+        try {
+            $mdb2 = getConnection();
+            $sql = "select count(*) from tt_google_sheets where spreadsheet_id = " . $mdb2->quote($spreadsheetId, 'text');
+            $result = $mdb2->query($sql);
+            $count = $result->fetchRow();
 
-        if (self::validateSheet($spreadsheet_id) && ($count < 1)) {
-            $sql = "insert into tt_google_sheets (user_id, spreadsheet_id) values ($user_id, " . $mdb2->quote($spreadsheet_id) . ")";
-            $affectedRows = $mdb2->exec($sql);
-    
+            if (self::validateSheet($spreadsheet_id) && ($count < 1)) {
+                $sql = "insert into tt_google_sheets (user_id, spreadsheet_id) values ($user_id, " . $mdb2->quote($spreadsheet_id) . ")";
+                $affectedRows = $mdb2->exec($sql);
 
-            if (!is_a($affectedRows, 'PEAR_Error')) {
-                return true; // Successfully added.
-            } else {
-                error_log('Error in add operation at ttGoogleSheet');
-                return false; // Failed to add.
+                if (!is_a($affectedRows, 'PEAR_Error')) {
+                    return true; // Successfully added.
+                } else {
+                    throw new Exception('Error in add operation at ttGoogleSheet');
+                }
             }
+        } catch (Exception $e) {
+            error_log($e->getMessage());
+            return false;
         }
     }
 
 
     // deletes a Google Sheet record by spreadsheet_id.
     static function delete($spreadsheetId) {
-        $mdb2 = getConnection();
-        $sql = "delete from tt_google_sheets where spreadsheet_id = " . $mdb2->quote($spreadsheetId, 'text');
-        $affectedRows = $mdb2->exec($sql);
+        try {
+            $mdb2 = getConnection();
+            $sql = "delete from tt_google_sheets where spreadsheet_id = " . $mdb2->quote($spreadsheetId, 'text');
+            $affectedRows = $mdb2->exec($sql);
+
+            if (is_a($affectedRows, 'PEAR_Error')) {
+                throw new Exception('Error in delete operation at ttGoogleSheet');
+            }
+        } catch (Exception $e) {
+            error_log($e->getMessage());
+            return false;
+        }
     }
 
     // retrieves all Google Sheets shared to serbice bot.
     public static function fetchSpreadsheetDetails() {
-
-        $mdb2 = getConnection();
-        $sql = "SELECT spreadsheet_id FROM tt_google_sheets";
-        $res = $mdb2->query($sql);
-        $dataArray = $res->fetchAll(MDB2_FETCHMODE_ASSOC);
         try {
+            $mdb2 = getConnection();
+            $sql = "SELECT spreadsheet_id FROM tt_google_sheets";
+            $res = $mdb2->query($sql);
+            $dataArray = $res->fetchAll(MDB2_FETCHMODE_ASSOC);
             self::initializeGoogleServices(); 
             $listOfSpreadsheets = [];
 
@@ -77,39 +88,44 @@ class ttGoogleSheets {
                 // Name of spreadsheet
                 $listOfSpreadsheets[$row['spreadsheet_id']] = $spreadsheetName;
             }
+            return $listOfSpreadsheets;
         } catch (Exception $e) {
-            echo 'Caught exception: ', $e->getMessage(), "\n";
+            error_log('Caught exception in fetchSpreadsheetDetails: ' . $e->getMessage());
+            return [];
         }
-
-        return $listOfSpreadsheets;
     }
 
     // retrieves all tabs from a Google Sheet by spreadsheet_id.
     public static function getTabs($id) {
-        self::initializeGoogleServices(); 
-        $spreadsheetDetails = self::$sheetsService->spreadsheets->get($id);
-        $tabs = [];
-
-        foreach ($spreadsheetDetails->getSheets() as $sheet) {
-            $sheetTitle = $sheet->getProperties()->getTitle();
-            $tabs[] = $sheetTitle;
+        try {
+            self::initializeGoogleServices(); 
+            $spreadsheetDetails = self::$sheetsService->spreadsheets->get($id);
+            $tabs = [];
+            foreach ($spreadsheetDetails->getSheets() as $sheet) {
+                $sheetTitle = $sheet->getProperties()->getTitle();
+                $tabs[] = $sheetTitle;
+            }
+            return $tabs;
+        } catch (Exception $e) {
+            error_log('Caught exception in getTabs: ' . $e->getMessage());
+            return [];
         }
-
-        return $tabs;
     }
 
 
     public static function createSheet($sheetName, $folderId) {
-        self::initializeGoogleServices();
-
-        // Create a new spreadsheet using Google Sheets API
-        $spreadsheetProperties = new Google_Service_Sheets_SpreadsheetProperties();
-        $spreadsheetProperties->setTitle($sheetName);
-
-        $spreadsheet = new Google_Service_Sheets_Spreadsheet();
-        $spreadsheet->setProperties($spreadsheetProperties);
-
         try {
+            self::initializeGoogleServices();
+
+
+            // Create a new spreadsheet using Google Sheets API
+            $spreadsheetProperties = new Google_Service_Sheets_SpreadsheetProperties();
+            $spreadsheetProperties->setTitle($sheetName);
+
+            $spreadsheet = new Google_Service_Sheets_Spreadsheet();
+            $spreadsheet->setProperties($spreadsheetProperties);
+
+            
             $spreadsheet = self::$sheetsService->spreadsheets->create($spreadsheet);
             $spreadsheetId = $spreadsheet->getSpreadsheetId();
 
@@ -121,45 +137,44 @@ class ttGoogleSheets {
                 'removeParents' => join(',', $currentParents),
                 'fields' => 'id, parents',
             ]);
-            
             return $spreadsheetId;
         } catch (Exception $e) {
-            // Consider better error handling or logging here
             echo 'Error creating spreadsheet: ' . $e->getMessage();
-            return null; // Or handle the error as appropriate
+            return null;
         }
     }
     
     // retrieves all Google Drive folders shared to service bot.
     public static function fetchFolders() {
-        self::initializeGoogleServices();
-
-        $folders = [];
-        try {
+        try {    
+            self::initializeGoogleServices();
+            $folders = [];
             $optParams = [
                 'pageSize' => 10,
                 'fields' => 'nextPageToken, files(id, name)',
                 'q' => "mimeType='application/vnd.google-apps.folder'"
             ];
+            // Get the list of folders
             $results = self::$driveService->files->listFiles($optParams);
             foreach ($results->getFiles() as $file) {
                 $folders[$file->getId()] = $file->getName();
             }
         } catch (Exception $e) {
-            echo 'An error occurred: ' . $e->getMessage();
+            error_log('An error occurred in fetchFolders: ' . $e->getMessage());
+            return [];
         }
-
         return $folders;
     }
 
+    // validates a Google Sheet by spreadsheet_id
     public static function validateSheet($spreadsheet_id) {
-        self::initializeGoogleServices();
         try {
+            self::initializeGoogleServices();
             $spreadsheet = self::$sheetsService->spreadsheets->get($spreadsheet_id);
             return true;
         } catch (Exception $e) {
+            error_log('An error occurred in validateSheet: ' . $e->getMessage());
             return false;
         }
     }
-      
 }
