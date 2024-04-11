@@ -19,12 +19,12 @@
     </tr>
     <!-- Tab ID Dropdown -->
     <tr>
-      <td><label for="tabId">Tab:</label></td>
+      <td><label name="tabId" for="tabId">Tab:</label></td>
       <td>{$forms.tabsForm.tabId.control}</td>
     </tr>
     <!-- New Tab Name Input -->
     <tr>
-      <td><label for="newTab">New Tab Name:</label></td>
+      <td><label name="newTab" for="newTab">New Tab Name:</label></td>
       <td>{$forms.tabsForm.newTab.control}</td>
     </tr>
   </table>

@@ -15,15 +15,12 @@ if (!(ttAccessAllowed('view_own_reports') || ttAccessAllowed('view_reports') || 
 
 // Initialize Google Client and Services (Sheets and Drive)
 $listOfSpreadsheets = ttGoogleSheets::fetchSpreadsheetDetails();
-$folders = ttGoogleSheets::fetchFolders();
 
 // Create a form
 $form = new Form('googleSheetsForm');
 
 // Add controls to the form
-$form->addInput(array('type'=>'combobox', 'name'=>'folderId', 'data'=>$folders, 'empty'=>array(''=>$i18n->get('dropdown.selectFolder'))));
 $form->addInput(array('type'=>'combobox', 'name'=>'sheetId', 'data'=>$listOfSpreadsheets, 'empty'=>array(''=>$i18n->get('dropdown.select'))));
-$form->addInput(['type' => 'text', 'name' => 'newSheet', 'attributes' => ['placeholder' => 'New Spreadsheet']]);
 $form->addInput(['type' => 'submit', 'name' => 'btn_send', 'value' => 'Next']);
 $form->addInput(['type' => 'submit', 'name' => 'btn_settings', 'value' => 'Settings']);
 
@@ -41,16 +38,11 @@ if ($request->isPost()) {
 
   // Validation parameters
   $selectedSheetId = $bean->getAttribute('sheetId');
-  $selectedFolderId = $bean->getAttribute('folderId');
-  $newSheet = $bean->getAttribute('newSheet');
-
-  $isExistingSheetSelected = $selectedSheetId && !$selectedFolderId && !$newSheet;
-  $isNewSheetInfoProvided = $selectedFolderId && $newSheet && !$selectedSheetId;
 
   // Check if either sheetId is selected and not folderId and newSheet, or folderId and newSheet are populated and not sheetId.
-  if ($isExistingSheetSelected || $isNewSheetInfoProvided) {
+  if (isset($listOfSpreadsheets[$selectedSheetId])) {
     // $listOfSpreadsheets maps IDs to names otherwise use the newSheet input.
-    $selectedSheetName = isset($listOfSpreadsheets[$selectedSheetId]) ? $listOfSpreadsheets[$selectedSheetId] : $newSheet;
+    $selectedSheetName = $listOfSpreadsheets[$selectedSheetId];
     $bean->saveDetachedAttribute('sheetName', $selectedSheetName);
 
     $bean->saveBean(); // Persists the changes.
@@ -59,7 +51,7 @@ if ($request->isPost()) {
   }
   else {
     // Store error message in a session variable
-    $_SESSION['error_message'] = 'Incorrect parameter selection: Choose a spreadsheet or select a folder and enter a new spreadsheet name.';
+    $_SESSION['error_message'] = 'Choose a spreadsheet from the dropdown';
     header('Location: gs_choose_sheet.php');
     exit();
   }

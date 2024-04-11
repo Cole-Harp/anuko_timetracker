@@ -194,15 +194,15 @@ if ($totals_only) {
     $csv_to_export = $csv_to_export . "\n";
   }
 }
-
 try {
-  $bean = new ActionForm('sheetsBean', new Form('tabsForm'), $request);
+  $destination = new ActionForm('sheetsBean', new Form('tabsForm'), $request);
+  $destination->loadBean();
 
-  $spreadsheet_id = $bean->getAttribute('sheetId');
+  $spreadsheet_id = $destination->getAttribute('sheetId');
   // Proceed with existing tab or newTab logic
-  $existingTab = $bean->getAttribute('tabId');
-  $newTab = $bean->getAttribute('newTab');
-  $selectedTab = !empty($newTab) ? $newTab : $existingTab;
+  $existingTab = $destination->getDetachedAttribute('tabId');
+  $newTab = $destination->getDetachedAttribute('newTab');
+  $spreadsheet_range = !empty($newTab) ? $newTab : $existingTab;
 
   // Prepare the data to update
   $lines = explode("\n", $csv_to_export);
@@ -216,16 +216,16 @@ try {
   if (!empty($newTab)) {
       $batchUpdateRequest = new Google_Service_Sheets_BatchUpdateSpreadsheetRequest([
           'requests' => [
-              'addSheet' => [
-                  'properties' => ['title' => $selectedTab]
+              [
+                  'addSheet' => [
+                      'properties' => ['title' => $newTab]
+                  ]
               ]
           ]
       ]);
       $service->spreadsheets->batchUpdate($spreadsheet_id, $batchUpdateRequest);
   }
 
-  // Define the full range including the tab name
-  $spreadsheet_range = $selectedTab;
   $valueRange = new Google_Service_Sheets_ValueRange(['values' => $values]);
   $conf = ["valueInputOption" => "RAW"];
   
