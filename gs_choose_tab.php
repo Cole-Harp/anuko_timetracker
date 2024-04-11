@@ -36,8 +36,7 @@ $form->addInput(['type' => 'submit', 'name' => 'btn_select_tab', 'value' => 'Sel
 // Hidden inputs for sheetId to persist data.  There might be a better way to do this
 $form->addInput(['type' => 'hidden', 'name' => 'sheetId', 'value' => $selectedSheetId]);
 
-$bean = new ActionForm('sheetsBean', $form, $request);
-$bean->loadBean();
+                                                     
 if($request->isPost() && $request->getParameter('btn_select_tab')) {
 
   if ($request->isPost() && (!empty($request->getParameter('tabId')) || !empty($request->getParameter('newTab')))){
