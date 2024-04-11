@@ -13,10 +13,6 @@ if (!(ttAccessAllowed('view_own_reports') || ttAccessAllowed('view_reports') || 
 }
 // Get bean for the form
 $bean = new ActionForm('sheetsBean', new Form('googleSheetsForm'), $request);
-
-if ($request->isPost()) {
-    $bean->loadBean();
-}
 $selectedSheetName = $bean->getDetachedAttribute('sheetName');
 $selectedSheetId = $bean->getAttribute('sheetId');
 $truncatedSheetId = substr($selectedSheetId, 0, 10) . '...';
