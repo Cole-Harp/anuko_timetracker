@@ -39,9 +39,9 @@ if ($request->isPost()) {
   // Validation parameters
   $selectedSheetId = $bean->getAttribute('sheetId');
 
-  // Check if either sheetId is selected and not folderId and newSheet, or folderId and newSheet are populated and not sheetId.
+  // Check if sheetId is selected.
   if (isset($listOfSpreadsheets[$selectedSheetId])) {
-    // $listOfSpreadsheets maps IDs to names otherwise use the newSheet input.
+    // $listOfSpreadsheets maps IDs to names.
     $selectedSheetName = $listOfSpreadsheets[$selectedSheetId];
     $bean->saveDetachedAttribute('sheetName', $selectedSheetName);
 
@@ -57,6 +57,7 @@ if ($request->isPost()) {
   }
 }
 
+// Check for error message in session and assign it to smarty
 if (isset($_SESSION['error_message'])) {
     $errorMessage = $_SESSION['error_message'];
     unset($_SESSION['error_message']);

@@ -112,60 +112,6 @@ class ttGoogleSheets {
         }
     }
 
-
-    public static function createSheet($sheetName, $folderId) {
-        try {
-            self::initializeGoogleServices();
-
-
-            // Create a new spreadsheet using Google Sheets API
-            $spreadsheetProperties = new Google_Service_Sheets_SpreadsheetProperties();
-            $spreadsheetProperties->setTitle($sheetName);
-
-            $spreadsheet = new Google_Service_Sheets_Spreadsheet();
-            $spreadsheet->setProperties($spreadsheetProperties);
-
-            
-            $spreadsheet = self::$sheetsService->spreadsheets->create($spreadsheet);
-            $spreadsheetId = $spreadsheet->getSpreadsheetId();
-
-            // Move the spreadsheet to the specified folder using Google Drive API
-            $emptyFileMetadata = new Google_Service_Drive_DriveFile();
-            $currentParents = self::$driveService->files->get($spreadsheetId, ['fields' => 'parents'])->parents;
-            $file = self::$driveService->files->update($spreadsheetId, $emptyFileMetadata, [
-                'addParents' => $folderId,
-                'removeParents' => join(',', $currentParents),
-                'fields' => 'id, parents',
-            ]);
-            return $spreadsheetId;
-        } catch (Exception $e) {
-            echo 'Error creating spreadsheet: ' . $e->getMessage();
-            return null;
-        }
-    }
-    
-    // retrieves all Google Drive folders shared to service bot.
-    public static function fetchFolders() {
-        try {    
-            self::initializeGoogleServices();
-            $folders = [];
-            $optParams = [
-                'pageSize' => 10,
-                'fields' => 'nextPageToken, files(id, name)',
-                'q' => "mimeType='application/vnd.google-apps.folder'"
-            ];
-            // Get the list of folders
-            $results = self::$driveService->files->listFiles($optParams);
-            foreach ($results->getFiles() as $file) {
-                $folders[$file->getId()] = $file->getName();
-            }
-        } catch (Exception $e) {
-            error_log('An error occurred in fetchFolders: ' . $e->getMessage());
-            return [];
-        }
-        return $folders;
-    }
-
     // validates a Google Sheet by spreadsheet_id
     public static function validateSheet($spreadsheet_id) {
         try {

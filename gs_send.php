@@ -194,6 +194,7 @@ if ($totals_only) {
     $csv_to_export = $csv_to_export . "\n";
   }
 }
+
 try {
   $destination = new ActionForm('sheetsBean', new Form('tabsForm'), $request);
   $destination->loadBean();
