@@ -5,6 +5,7 @@ require('/var/www/html/vendor/autoload.php');
 import('form.Form');
 import('form.ActionForm');
 import('ttReportHelper');
+import('ttGoogleSheets');
 
 // Access checks.
 if (!(ttAccessAllowed('view_own_reports') || ttAccessAllowed('view_reports') || ttAccessAllowed('view_all_reports')  || ttAccessAllowed('view_client_reports'))) {
@@ -199,15 +200,10 @@ try {
   $destination->loadBean();
 
   $spreadsheet_id = $destination->getAttribute('sheetId');
-  $newSheetName = $destination->getAttribute('newSheetName');
-
   // Proceed with existing tab or newTab logic
-  $existingTab = $destination->getAttribute('tabId');
-  $newTab = $destination->getAttribute('newTab');
-
-  $destination->destroyBean();
-
-  $selectedTab = !empty($newTab) ? $newTab : $existingTab;
+  $existingTab = $destination->getDetachedAttribute('tabId');
+  $newTab = $destination->getDetachedAttribute('newTab');
+  $spreadsheet_range = !empty($newTab) ? $newTab : $existingTab;
 
   // Prepare the data to update
   $lines = explode("\n", $csv_to_export);
@@ -215,28 +211,22 @@ try {
       return str_getcsv($v, ",");
   }, $lines);
 
-  // Google Client setup
-  $service_account_file = '/var/www/html/credentials.json';
-  putenv('GOOGLE_APPLICATION_CREDENTIALS=' . $service_account_file);
-  $client = new Google_Client();
-  $client->useApplicationDefaultCredentials();
-  $client->addScope(Google_Service_Sheets::SPREADSHEETS);
-  $service = new Google_Service_Sheets($client);
+  $service = ttGoogleSheets::getSheetsService();
 
   // If newTab is specified, add the new tab
   if (!empty($newTab)) {
       $batchUpdateRequest = new Google_Service_Sheets_BatchUpdateSpreadsheetRequest([
           'requests' => [
-              'addSheet' => [
-                  'properties' => ['title' => $selectedTab]
+              [
+                  'addSheet' => [
+                      'properties' => ['title' => $newTab]
+                  ]
               ]
           ]
       ]);
       $service->spreadsheets->batchUpdate($spreadsheet_id, $batchUpdateRequest);
   }
 
-  // Define the full range including the tab name
-  $spreadsheet_range = $selectedTab;
   $valueRange = new Google_Service_Sheets_ValueRange(['values' => $values]);
   $conf = ["valueInputOption" => "RAW"];
   
